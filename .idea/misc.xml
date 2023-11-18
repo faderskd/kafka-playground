@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Black">
+    <option name="sdkName" value="Python 3.9 (kafka-playground)" />
+  </component>
+  <component name="ComposerSettings">
+    <execution />
+  </component>
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="FrameworkDetectionExcludesConfiguration">
+    <file type="web" url="file://$PROJECT_DIR$" />
+  </component>
+  <component name="PhpWorkspaceProjectConfiguration" backward_compatibility_performed="true" />
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" project-jdk-name="temurin-17" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/out" />
+  </component>
+  <component name="SbtLocalSettings">
+    <option name="projectSyncType">
+      <map>
+        <entry key="$PROJECT_DIR$/../../Praca/merchant-quality-spark" value="PREVIEW" />
+        <entry key="$PROJECT_DIR$/../../Praca/offline-to-online-spark" value="PREVIEW" />
+        <entry key="$PROJECT_DIR$/../../Praca/reco-cassandra-uploader" value="PREVIEW" />
+        <entry key="$PROJECT_DIR$/../../Praca/seller-quality-grade-spark" value="PREVIEW" />
+        <entry key="$PROJECT_DIR$/../../Praca/seller-quality-spark" value="PREVIEW" />
+      </map>
+    </option>
+  </component>
+  <component name="ScalaSbtSettings">
+    <option name="customVMPath" />
+  </component>
+</project>
