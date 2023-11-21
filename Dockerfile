@@ -21,7 +21,7 @@ WORKDIR $KAFKA_DIR/kafka/
 RUN apt -y install software-properties-common
 
 
-COPY ./images/server.properties $KAFKA_DIR/kafka/config/kraft/server.properties
+COPY images/template.server.properties $KAFKA_DIR/kafka/config/kraft/server.properties
 COPY ./images/env_replacer.py $KAFKA_DIR/kafka/config/kraft/env_replacer.py
 
 WORKDIR $KAFKA_DIR/kafka/
