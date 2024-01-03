@@ -20,12 +20,9 @@ WORKDIR $KAFKA_DIR/kafka/
 
 RUN apt -y install software-properties-common
 
-
 COPY images/template.server.properties $KAFKA_DIR/kafka/config/kraft/server.properties
 COPY ./images/env_replacer.py $KAFKA_DIR/kafka/config/kraft/env_replacer.py
+COPY ./images/run.sh /$KAFKA_DIR/kafka/run.sh
+RUN chmod +x /$KAFKA_DIR/kafka/run.sh
 
-WORKDIR $KAFKA_DIR/kafka/
-
-RUN ./bin/kafka-storage.sh format -t "JFb61d2pD6fe224FbsjoZl" -c config/kraft/server.properties
-
-CMD ["/opt/kafka/bin/kafka-server-start.sh", "/opt/kafka/config/kraft/server.properties"]
+CMD ["sh", "-c", "/opt/kafka/run.sh"]

@@ -13,10 +13,11 @@ def replace_properties_from_env(in_file, out_file):
         for line in content:
             match = re.search(KAFKA_PATTERN, line)
             if match:
+                matched = match.group(0)
                 kafka_property = match.group(0).lstrip("$")
                 if kafka_property not in environment:
                     raise RuntimeError(f'Cannot find {kafka_property} env variable')
-                new_config_content_lines.append(line.replace(kafka_property, environment[kafka_property]))
+                new_config_content_lines.append(line.replace(matched, environment[kafka_property]))
             else:
                 new_config_content_lines.append(line)
 
