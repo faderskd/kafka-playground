@@ -2,11 +2,9 @@ package transactions;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record Purchase(
-        @JsonProperty("purchaseId") String purchaseId,
-        @JsonProperty("productId") String productId,
+public record Invoice(
         @JsonProperty("userId") String userId,
-        @JsonProperty("userFullName") String userFullName,
+        @JsonProperty("productId") String productId,
         @JsonProperty("quantity") int quantity,
         @JsonProperty("totalPrice") String totalPrice) {
 }

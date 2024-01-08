@@ -22,8 +22,8 @@ public class Part1IdempotentProducer {
     private final static Logger logger = LoggerFactory.getLogger(Part1IdempotentProducer.class);
     private final static ObjectMapper mapper = new ObjectMapper();
     private final static String PURCHASE_TOPIC = "purchase";
-    private final static String STOCK_TOPIC = "stock";
-    private final static String PARCEL_TOPIC = "parcels";
+    private final static String INVOICES_TOPIC = "invoices";
+    private final static String SHIPMENTS_TOPIC = "shipments";
 
     public static void main(String[] args) {
         Properties producerProps = producerProperties();
@@ -36,11 +36,13 @@ public class Part1IdempotentProducer {
                     ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
                     for (ConsumerRecord<String, String> record : records) {
                         Purchase purchase = mapper.readValue(record.value(), Purchase.class);
-                        ProductStock productStock = new ProductStock(purchase.purchaseId(), purchase.productId(), -purchase.quantity());
-                        Parcel parcel = new Parcel(UUID.randomUUID().toString(), purchase.productId(), purchase.userId(), purchase.quantity());
+                        Invoice invoice = new Invoice(purchase.userId(), purchase.productId(),
+                                purchase.quantity(), purchase.totalPrice());
+                        Shipment shipment = new Shipment(UUID.randomUUID().toString(), purchase.productId(),
+                                purchase.userFullName(), "SomeStreet 12/18, 00-006 Warsaw", purchase.quantity());
                         // TODO: add success callback
-                        producer.send(new ProducerRecord<>(STOCK_TOPIC, mapper.writeValueAsString(productStock)));
-                        producer.send(new ProducerRecord<>(PARCEL_TOPIC, mapper.writeValueAsString(parcel)));
+                        producer.send(new ProducerRecord<>(INVOICES_TOPIC, mapper.writeValueAsString(invoice)));
+                        producer.send(new ProducerRecord<>(SHIPMENTS_TOPIC, mapper.writeValueAsString(shipment)));
                         consumer.commitSync();
                         logger.info("Successfully processed purchase event: {}", purchase);
                     }

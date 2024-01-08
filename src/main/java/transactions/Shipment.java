@@ -2,9 +2,10 @@ package transactions;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record Parcel(
-        @JsonProperty("parcelId") String parcelId,
+public record Shipment(
+        @JsonProperty("shipmentId") String shipmentId,
         @JsonProperty("productId") String productId,
-        @JsonProperty("userId") String userId,
+        @JsonProperty("recipient") String recipient,
+        @JsonProperty("address") String address,
         @JsonProperty("quantity") int quantity) {
 }
