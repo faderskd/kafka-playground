@@ -40,9 +40,8 @@ public class Part1IdempotentProducer {
                                 purchase.quantity(), purchase.totalPrice());
                         Shipment shipment = new Shipment(UUID.randomUUID().toString(), purchase.productId(),
                                 purchase.userFullName(), "SomeStreet 12/18, 00-006 Warsaw", purchase.quantity());
-                        // TODO: add success callback
-                        producer.send(new ProducerRecord<>(INVOICES_TOPIC, mapper.writeValueAsString(invoice)));
-                        producer.send(new ProducerRecord<>(SHIPMENTS_TOPIC, mapper.writeValueAsString(shipment)));
+                        producer.send(new ProducerRecord<>(INVOICES_TOPIC, mapper.writeValueAsString(invoice))).get();
+                        producer.send(new ProducerRecord<>(SHIPMENTS_TOPIC, mapper.writeValueAsString(shipment))).get();
                         consumer.commitSync();
                         logger.info("Successfully processed purchase event: {}", purchase);
                     }
