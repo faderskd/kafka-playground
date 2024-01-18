@@ -1,4 +1,4 @@
-package transactions;
+package kafkaplayground.transactions;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

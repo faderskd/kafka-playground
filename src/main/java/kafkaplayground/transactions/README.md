@@ -11,7 +11,7 @@
 ### Produce purchase events
 ```
 ./kafka-console-producer.sh --topic purchase --bootstrap-server localhost:9092
->{"purchaseId": "purch1", "productId":"p1","userId":"u1","quantity":2,"userFullName":"Daniel Faderski","totalPrice":"20$"}
+{"purchaseId": "purch1", "productId":"p1","userId":"u1","quantity":2,"userFullName":"Daniel Faderski","totalPrice":"20$"}
 ```
 
 ### Consume shipment and invoice events
