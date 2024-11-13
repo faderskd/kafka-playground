@@ -3,18 +3,18 @@ FROM python:3.9-slim AS python
 FROM eclipse-temurin:17.0.7_7-jre
 
 ARG KAFKA_DIR="/opt/"
-ARG KAFKA_VERSION="kafka_2.13-3.6.0"
-ARG KAFKA_FILE="kafka_2.13-3.6.0.tgz"
-ARG KAFKA_URL="https://downloads.apache.org/kafka/3.6.0/kafka_2.13-3.6.0.tgz"
+ARG KAFKA_UNPACKED_FILE="kafka_2.13-3.7.0"
+ARG KAFKA_TAR_FILE="kafka_2.13-3.7.0.tgz"
+ARG KAFKA_URL="https://downloads.apache.org/kafka/3.7.0/kafka_2.13-3.7.0.tgz"
 
 RUN apt-get update
 RUN mkdir -p $KAFKA_DIR
 WORKDIR $KAFKA_DIR
 
 RUN wget $KAFKA_URL
-RUN tar -xvf $KAFKA_FILE
-RUN mv $KAFKA_VERSION kafka
-RUN rm $KAFKA_FILE
+RUN tar -xvf $KAFKA_TAR_FILE
+RUN mv $KAFKA_UNPACKED_FILE kafka
+RUN rm $KAFKA_TAR_FILE
 
 WORKDIR $KAFKA_DIR/kafka/
 

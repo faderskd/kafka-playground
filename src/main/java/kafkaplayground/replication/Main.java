@@ -1,4 +1,4 @@
-package kafkaplayground.transactions;
+package kafkaplayground.replication;
 
 import kafkaplayground.ProgramLoop;
 import org.slf4j.Logger;
@@ -8,18 +8,18 @@ public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
-        ProgramLoop programLoop = new Part2TransactionalProducer();
-        var kafkaConsumerThread = new Thread(programLoop::start, "consumer-loop-thread");
+        ProgramLoop programLoop = new SimpleProducer();
+        var kafkaProducerThread = new Thread(programLoop::start, "producer-loop-thread");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            logger.info("Consumer loop wakeup...");
+            logger.info("Producer loop wakeup...");
             programLoop.wakeup();
             try {
-                kafkaConsumerThread.join();
+                kafkaProducerThread.join();
             } catch (InterruptedException e) {
                 logger.error("Main thread interrupted", e);
             }
         }, "shutdown-thread"));
-        kafkaConsumerThread.start();
+        kafkaProducerThread.start();
     }
 
 }

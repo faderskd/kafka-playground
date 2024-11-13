@@ -1,6 +1,6 @@
 package kafkaplayground;
 
-public interface ConsumerLoop {
+public interface ProgramLoop {
     void start();
     void wakeup();
 }

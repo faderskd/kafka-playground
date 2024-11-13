@@ -60,6 +60,26 @@ services:
       KAFKA_CLUSTER_ID: 'JFb61d2pD6fe224FbsjoZl'
       KAFKA_LOG_DIRS: '/tmp/kafka/logs'
       KAFKA_NUM_PARTITIONS: 3
+  kafka4:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    container_name: kafka4
+    hostname: kafka4
+    ports:
+      - "9095:9095"
+    environment:
+      KAFKA_NODE_ID: 4
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_LISTENERS: 'INTERNAL://kafka4:29092,EXTERNAL://0.0.0.0:9095'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka4:29092,EXTERNAL://localhost:9095'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_QUORUM_VOTERS: '1@kafka3:29093,2@kafka2:29093,3@kafka3:29093'
+      KAFKA_PROCESS_ROLES: 'broker'
+      KAFKA_CLUSTER_ID: 'JFb61d2pD6fe224FbsjoZl'
+      KAFKA_LOG_DIRS: '/tmp/kafka/logs'
+      KAFKA_NUM_PARTITIONS: 3
 #  schema-registry:
 #    image: confluentinc/cp-schema-registry
 #    container_name: schema-registry

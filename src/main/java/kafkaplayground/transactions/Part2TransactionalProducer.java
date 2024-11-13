@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
-import kafkaplayground.ConsumerLoop;
+import kafkaplayground.ProgramLoop;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class Part2TransactionalProducer implements ConsumerLoop {
+public class Part2TransactionalProducer implements ProgramLoop {
     private final static Logger logger = LoggerFactory.getLogger(Part2TransactionalProducer.class);
     private final static ObjectMapper mapper = new ObjectMapper();
     private final static String PURCHASE_TOPIC = "purchase";
@@ -91,6 +91,7 @@ public class Part2TransactionalProducer implements ConsumerLoop {
             }
         } finally {
             logger.info("Closing consumer...");
+            producer.close();
             consumer.close();
         }
     }
