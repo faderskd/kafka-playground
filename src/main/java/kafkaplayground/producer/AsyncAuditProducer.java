@@ -13,8 +13,8 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SynchronousAuditProducer implements ProgramLoop {
-    private final static Logger logger = LoggerFactory.getLogger(SynchronousAuditProducer.class);
+public class AsyncAuditProducer implements ProgramLoop {
+    private final static Logger logger = LoggerFactory.getLogger(AsyncAuditProducer.class);
     private final static ObjectMapper mapper = new ObjectMapper();
     private final AtomicInteger sentCounter = new AtomicInteger(0);
     private final AtomicInteger sequenceNumber = new AtomicInteger(0);
@@ -23,17 +23,31 @@ public class SynchronousAuditProducer implements ProgramLoop {
     private final KafkaProducer<String, String> producer;
     private volatile boolean running = true;
 
-    public SynchronousAuditProducer() {
+    public AsyncAuditProducer() {
         this.producer = new KafkaProducer<>(producerProperties());
     }
 
     private static Properties producerProperties() {
         Properties props = new Properties();
+        // required parameters
         props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092,localhost:9093,localhost:9094,localhost:9095");
         props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        props.setProperty(ProducerConfig.BATCH_SIZE_CONFIG, "1024");
-        props.setProperty(ProducerConfig.LINGER_MS_CONFIG, "1000");
+        // partitioning
+        props.setProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, RoundRobinPartitioner.class.getName());
+
+        // batching
+        props.setProperty(ProducerConfig.LINGER_MS_CONFIG, "100"); // 500ms
+        props.setProperty(ProducerConfig.BATCH_SIZE_CONFIG, "1048576"); // 1MB
+
+        // sending
+        props.setProperty(ProducerConfig.ACKS_CONFIG, "1"); // only leader confirms
+        props.setProperty(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, "10000"); // 10s
+        props.setProperty(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, "200"); // 200ms
+        props.setProperty(ProducerConfig.MAX_BLOCK_MS_CONFIG, "1000"); // 1s
+        props.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "10485760"); // 10MB
+        props.setProperty("partitions.count", "3");
+
         return props;
     }
 

@@ -8,7 +8,7 @@ public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
-        ProgramLoop programLoop = new SynchronousAuditProducer();
+        ProgramLoop programLoop = new AsyncAuditProducer();
         var kafkaProducerThread = new Thread(programLoop::start, "producer-loop-thread");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             logger.info("Producer loop wakeup...");
