@@ -74,7 +74,7 @@ public class SynchronousAuditProducer implements ProgramLoop {
     private static AuditLog generateExampleAuditLog() {
         ActionType actionType = ActionType.values()[(int) (Math.random() * ActionType.values().length)];
         String username = "user" + (int) (Math.random() * 100);
-        String now = Instant.now().toString();
+        long now = Instant.now().toEpochMilli();
         return new AuditLog(now, username, actionType);
     }
 }

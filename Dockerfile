@@ -3,9 +3,9 @@ FROM python:3.9-slim AS python
 FROM eclipse-temurin:17.0.7_7-jre
 
 ARG KAFKA_DIR="/opt/"
-ARG KAFKA_UNPACKED_FILE="kafka_2.13-3.7.0"
-ARG KAFKA_TAR_FILE="kafka_2.13-3.7.0.tgz"
-ARG KAFKA_URL="https://downloads.apache.org/kafka/3.7.0/kafka_2.13-3.7.0.tgz"
+ARG KAFKA_UNPACKED_FILE="kafka_2.13-3.8.1"
+ARG KAFKA_TAR_FILE="kafka_2.13-3.8.1.tgz"
+ARG KAFKA_URL="https://downloads.apache.org/kafka/3.8.1/kafka_2.13-3.8.1.tgz"
 
 RUN apt-get update
 RUN mkdir -p $KAFKA_DIR

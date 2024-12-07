@@ -1,8 +1,14 @@
 package kafkaplayground.producer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Clock;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import kafkaplayground.ProgramLoop;
 import kafkaplayground.producer.AuditLog.ActionType;
@@ -19,12 +25,18 @@ public class AsyncAuditProducer implements ProgramLoop {
     private final AtomicInteger sentCounter = new AtomicInteger(0);
     private final AtomicInteger sequenceNumber = new AtomicInteger(0);
     private final static String AUDIT_TOPIC = "userActivity";
-
+    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private final Clock clock = Clock.systemDefaultZone();
+    private final Timer timer;
     private final KafkaProducer<String, String> producer;
     private volatile boolean running = true;
 
     public AsyncAuditProducer() {
         this.producer = new KafkaProducer<>(producerProperties());
+        timer = Timer
+                .builder("send.latency")
+                .publishPercentiles(0.99)
+                .register(meterRegistry);
     }
 
     private static Properties producerProperties() {
@@ -33,6 +45,7 @@ public class AsyncAuditProducer implements ProgramLoop {
         props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092,localhost:9093,localhost:9094,localhost:9095");
         props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+
         // partitioning
         props.setProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, RoundRobinPartitioner.class.getName());
 
@@ -42,8 +55,8 @@ public class AsyncAuditProducer implements ProgramLoop {
 
         // sending
         props.setProperty(ProducerConfig.ACKS_CONFIG, "1"); // only leader confirms
-        props.setProperty(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, "10000"); // 10s
-        props.setProperty(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, "200"); // 200ms
+        props.setProperty(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, "2000"); // 2s
+        props.setProperty(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, "200"); // 300ms
         props.setProperty(ProducerConfig.MAX_BLOCK_MS_CONFIG, "1000"); // 1s
         props.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "10485760"); // 10MB
         props.setProperty("partitions.count", "3");
@@ -56,19 +69,23 @@ public class AsyncAuditProducer implements ProgramLoop {
         try {
             while (running) {
                 try {
-                    AuditLog p = generateExampleAuditLog();
-                    ProducerRecord<String, String> record = new ProducerRecord<>(AUDIT_TOPIC, mapper.writeValueAsString(p));
+                    AuditLog auditLog = generateExampleAuditLog();
+                    ProducerRecord<String, String> record = new ProducerRecord<>(AUDIT_TOPIC, mapper.writeValueAsString(auditLog));
+
                     int i = sequenceNumber.incrementAndGet();
+
                     record.headers().add("sequenceNumber", String.valueOf(i).getBytes());
                     producer.send(record, (metadata, exception) -> {
                         if (exception != null) {
                             logger.error("Error while sending audit event", exception);
                         } else {
+                            timer.record(clock.millis() - auditLog.timestamp(), TimeUnit.MILLISECONDS);
                             int partition = metadata.partition();
-                            logger.info("Successfully send audit event with sequence {} to partition {}", sequenceNumber, partition);
+//                            logger.info("Successfully send audit event with sequence {} to partition {}", sequenceNumber, partition);
                             sentCounter.incrementAndGet();
                         }
                     });
+                    reportMetrics();
                 } catch (Exception ex) {
                     logger.error("Error while sending audit event", ex);
                 }
@@ -76,6 +93,15 @@ public class AsyncAuditProducer implements ProgramLoop {
         } finally {
             producer.close();
             logger.info("Closing producer...");
+        }
+    }
+
+    private void reportMetrics() {
+        if (sequenceNumber.get() % 10000000 == 0) {
+            logger.info("------------------------- Reporting metrics --------------------------------------");
+            Arrays.stream(timer.takeSnapshot().percentileValues()).forEach(
+                    percentile -> logger.info("Percentile {} : {}", percentile.percentile(), percentile.value(TimeUnit.MILLISECONDS))
+            );
         }
     }
 
@@ -88,7 +114,7 @@ public class AsyncAuditProducer implements ProgramLoop {
     private static AuditLog generateExampleAuditLog() {
         ActionType actionType = ActionType.values()[(int) (Math.random() * ActionType.values().length)];
         String username = "user" + (int) (Math.random() * 100);
-        String now = Instant.now().toString();
-        return new AuditLog(now, username, actionType);
+        long timestamp = Instant.now().toEpochMilli();
+        return new AuditLog(timestamp, username, actionType);
     }
 }

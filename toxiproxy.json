@@ -1,0 +1,26 @@
+[
+  {
+    "name": "kafka1",
+    "listen": "localhost:9292",
+    "upstream": "localhost:9092",
+    "enabled": true
+  },
+  {
+    "name": "kafka2",
+    "listen": "localhost:9393",
+    "upstream": "localhost:9093",
+    "enabled": true
+  },
+  {
+    "name": "kafka3",
+    "listen": "localhost:9494",
+    "upstream": "localhost:9094",
+    "enabled": true
+  },
+  {
+    "name": "kafka4",
+    "listen": "localhost:9595",
+    "upstream": "localhost:9095",
+    "enabled": true
+  }
+]
