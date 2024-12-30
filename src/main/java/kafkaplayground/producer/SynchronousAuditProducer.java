@@ -3,6 +3,7 @@ package kafkaplayground.producer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import kafkaplayground.ProgramLoop;
 import kafkaplayground.producer.AuditLog.ActionType;
@@ -75,6 +76,6 @@ public class SynchronousAuditProducer implements ProgramLoop {
         ActionType actionType = ActionType.values()[(int) (Math.random() * ActionType.values().length)];
         String username = "user" + (int) (Math.random() * 100);
         long now = Instant.now().toEpochMilli();
-        return new AuditLog(now, username, actionType);
+        return new AuditLog(now, username, actionType, UUID.randomUUID().toString());
     }
 }

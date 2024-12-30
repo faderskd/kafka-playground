@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         ProgramLoop programLoop = new AsyncAuditProducer();
         var kafkaProducerThread = new Thread(programLoop::start, "producer-loop-thread");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -21,5 +21,4 @@ public class Main {
         }, "shutdown-thread"));
         kafkaProducerThread.start();
     }
-
 }

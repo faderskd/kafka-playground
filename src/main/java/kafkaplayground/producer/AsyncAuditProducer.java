@@ -4,10 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import kafkaplayground.ProgramLoop;
@@ -15,24 +16,26 @@ import kafkaplayground.producer.AuditLog.ActionType;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AsyncAuditProducer implements ProgramLoop {
     private final static Logger logger = LoggerFactory.getLogger(AsyncAuditProducer.class);
+    private final static Random random = new Random();
     private final static ObjectMapper mapper = new ObjectMapper();
+
     private final AtomicInteger sentCounter = new AtomicInteger(0);
-    private final AtomicInteger sequenceNumber = new AtomicInteger(0);
     private final static String AUDIT_TOPIC = "userActivity";
-    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
-    private final Clock clock = Clock.systemDefaultZone();
     private final Timer timer;
-    private final KafkaProducer<String, String> producer;
+    private final KafkaProducer<byte[], byte[]> producer;
     private volatile boolean running = true;
+    private long lastReportMillis = System.currentTimeMillis();
 
     public AsyncAuditProducer() {
         this.producer = new KafkaProducer<>(producerProperties());
+        MeterRegistry meterRegistry = new SimpleMeterRegistry();
         timer = Timer
                 .builder("send.latency")
                 .publishPercentiles(0.99)
@@ -42,24 +45,23 @@ public class AsyncAuditProducer implements ProgramLoop {
     private static Properties producerProperties() {
         Properties props = new Properties();
         // required parameters
-        props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092,localhost:9093,localhost:9094,localhost:9095");
-        props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9292,localhost:9393,localhost:9494,localhost:9595");
+        props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+        props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
         // partitioning
-        props.setProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, RoundRobinPartitioner.class.getName());
+//        props.setProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, RoundRobinPartitioner.class.getName());
 
         // batching
-        props.setProperty(ProducerConfig.LINGER_MS_CONFIG, "100"); // 500ms
-        props.setProperty(ProducerConfig.BATCH_SIZE_CONFIG, "1048576"); // 1MB
+        props.setProperty(ProducerConfig.LINGER_MS_CONFIG, "0");
+        props.setProperty(ProducerConfig.BATCH_SIZE_CONFIG, "262144"); // 256KB
 
         // sending
         props.setProperty(ProducerConfig.ACKS_CONFIG, "1"); // only leader confirms
-        props.setProperty(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, "2000"); // 2s
-        props.setProperty(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, "200"); // 300ms
+        props.setProperty(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, "10000"); // 10s
+        props.setProperty(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, "5000"); // 5s
         props.setProperty(ProducerConfig.MAX_BLOCK_MS_CONFIG, "1000"); // 1s
-        props.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "10485760"); // 10MB
-        props.setProperty("partitions.count", "3");
+//        props.setProperty("partitions.count", "3");
 
         return props;
     }
@@ -67,25 +69,31 @@ public class AsyncAuditProducer implements ProgramLoop {
     @Override
     public void start() {
         try {
+            long startMillis = System.currentTimeMillis();
             while (running) {
                 try {
                     AuditLog auditLog = generateExampleAuditLog();
-                    ProducerRecord<String, String> record = new ProducerRecord<>(AUDIT_TOPIC, mapper.writeValueAsString(auditLog));
 
-                    int i = sequenceNumber.incrementAndGet();
+                    ProducerRecord<byte[], byte[]> record =
+                            new ProducerRecord<>(AUDIT_TOPIC, mapper.writeValueAsBytes(auditLog));
 
-                    record.headers().add("sequenceNumber", String.valueOf(i).getBytes());
+                    byte [] traceId = "SomeTraceIdFromUpperLayers".getBytes();
+                    record.headers().add("trace-id", traceId);
+
+                    long sendTime = System.currentTimeMillis();
+
                     producer.send(record, (metadata, exception) -> {
                         if (exception != null) {
                             logger.error("Error while sending audit event", exception);
                         } else {
-                            timer.record(clock.millis() - auditLog.timestamp(), TimeUnit.MILLISECONDS);
-                            int partition = metadata.partition();
-//                            logger.info("Successfully send audit event with sequence {} to partition {}", sequenceNumber, partition);
+                            timer.record(System.currentTimeMillis() - sendTime, TimeUnit.MILLISECONDS);
                             sentCounter.incrementAndGet();
+                            reportMetrics(startMillis);
                         }
                     });
-                    reportMetrics();
+                    if (sentCounter.get() >= 20000000) {
+                        break;
+                    }
                 } catch (Exception ex) {
                     logger.error("Error while sending audit event", ex);
                 }
@@ -96,11 +104,16 @@ public class AsyncAuditProducer implements ProgramLoop {
         }
     }
 
-    private void reportMetrics() {
-        if (sequenceNumber.get() % 10000000 == 0) {
+    private void reportMetrics(long startMillis) {
+        if (System.currentTimeMillis() - lastReportMillis > 3000) {
+            lastReportMillis = System.currentTimeMillis();
+            double throughput = 1000 * ((double) sentCounter.get() / (System.currentTimeMillis() - startMillis));
             logger.info("------------------------- Reporting metrics --------------------------------------");
+            String throughputMsg = String.format("Send %dK messages. Throughput: %.2f records/s", sentCounter.get() / 1000, throughput);
+            logger.info(throughputMsg);
             Arrays.stream(timer.takeSnapshot().percentileValues()).forEach(
-                    percentile -> logger.info("Percentile {} : {}", percentile.percentile(), percentile.value(TimeUnit.MILLISECONDS))
+                    percentile -> logger.info(
+                            "Percentile {} : {}", percentile.percentile(), percentile.value(TimeUnit.MILLISECONDS))
             );
         }
     }
@@ -113,8 +126,17 @@ public class AsyncAuditProducer implements ProgramLoop {
 
     private static AuditLog generateExampleAuditLog() {
         ActionType actionType = ActionType.values()[(int) (Math.random() * ActionType.values().length)];
-        String username = "user" + (int) (Math.random() * 100);
+        String userId = "user-" + UUID.randomUUID();
         long timestamp = Instant.now().toEpochMilli();
-        return new AuditLog(timestamp, username, actionType);
+        return new AuditLog(timestamp, userId, actionType, UUID.randomUUID().toString());
+    }
+
+    private static byte[] generatePayload(int length) {
+        byte[] payload = new byte[length];
+        for (int i = 0; i < length; i++) {
+            // ASCII A-Z
+            payload[i] = (byte) (random.nextInt(26) + 65);
+        }
+        return payload;
     }
 }
