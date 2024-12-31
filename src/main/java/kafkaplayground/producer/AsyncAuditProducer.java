@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Properties;
@@ -74,10 +76,11 @@ public class AsyncAuditProducer implements ProgramLoop {
                 try {
                     AuditLog auditLog = generateExampleAuditLog();
 
+                    byte[] someKey = "AuditLogGenericKey".getBytes(StandardCharsets.UTF_8);
                     ProducerRecord<byte[], byte[]> record =
-                            new ProducerRecord<>(AUDIT_TOPIC, mapper.writeValueAsBytes(auditLog));
+                            new ProducerRecord<>(AUDIT_TOPIC, someKey, mapper.writeValueAsBytes(auditLog));
 
-                    byte [] traceId = "SomeTraceIdFromUpperLayers".getBytes();
+                    byte [] traceId = "SomeTraceIdFromUpperLayers".getBytes(StandardCharsets.UTF_8);
                     record.headers().add("trace-id", traceId);
 
                     long sendTime = System.currentTimeMillis();
