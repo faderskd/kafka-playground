@@ -4,13 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import kafkaplayground.ProgramLoop;
@@ -19,7 +19,6 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +28,8 @@ public class AsyncAuditProducer implements ProgramLoop {
     private final static ObjectMapper mapper = new ObjectMapper();
 
     private final AtomicInteger sentCounter = new AtomicInteger(0);
+    private final ConcurrentHashMap<Integer, AtomicInteger> partitionsSendCounters = new ConcurrentHashMap<>();
+
     private final static String AUDIT_TOPIC = "userActivity";
     private final Timer timer;
     private final KafkaProducer<byte[], byte[]> producer;
@@ -52,7 +53,7 @@ public class AsyncAuditProducer implements ProgramLoop {
         props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
         // partitioning
-//        props.setProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, RoundRobinPartitioner.class.getName());
+        props.setProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, RoundRobinPartitioner.class.getName());
 
         // batching
         props.setProperty(ProducerConfig.LINGER_MS_CONFIG, "0");
@@ -63,7 +64,7 @@ public class AsyncAuditProducer implements ProgramLoop {
         props.setProperty(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, "10000"); // 10s
         props.setProperty(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, "5000"); // 5s
         props.setProperty(ProducerConfig.MAX_BLOCK_MS_CONFIG, "1000"); // 1s
-//        props.setProperty("partitions.count", "3");
+//        props.setProperty("monitoring.enabled", "3");
 
         return props;
     }
@@ -76,11 +77,11 @@ public class AsyncAuditProducer implements ProgramLoop {
                 try {
                     AuditLog auditLog = generateExampleAuditLog();
 
-                    byte[] someKey = "AuditLogGenericKey".getBytes(StandardCharsets.UTF_8);
+//                    byte[] someKey = "AuditLogGenericKey".getBytes(StandardCharsets.UTF_8);
                     ProducerRecord<byte[], byte[]> record =
-                            new ProducerRecord<>(AUDIT_TOPIC, someKey, mapper.writeValueAsBytes(auditLog));
+                            new ProducerRecord<>(AUDIT_TOPIC, mapper.writeValueAsBytes(auditLog));
 
-                    byte [] traceId = "SomeTraceIdFromUpperLayers".getBytes(StandardCharsets.UTF_8);
+                    byte[] traceId = "SomeTraceIdFromUpperLayers".getBytes(StandardCharsets.UTF_8);
                     record.headers().add("trace-id", traceId);
 
                     long sendTime = System.currentTimeMillis();
@@ -91,6 +92,9 @@ public class AsyncAuditProducer implements ProgramLoop {
                         } else {
                             timer.record(System.currentTimeMillis() - sendTime, TimeUnit.MILLISECONDS);
                             sentCounter.incrementAndGet();
+                            partitionsSendCounters.
+                                    computeIfAbsent(metadata.partition(), (p) -> new AtomicInteger())
+                                    .incrementAndGet();
                             reportMetrics(startMillis);
                         }
                     });
@@ -118,6 +122,8 @@ public class AsyncAuditProducer implements ProgramLoop {
                     percentile -> logger.info(
                             "Percentile {} : {}", percentile.percentile(), percentile.value(TimeUnit.MILLISECONDS))
             );
+            partitionsSendCounters.forEach((partition, counter) ->
+                    logger.info("Partition {} : {}", partition, counter.get()));
         }
     }
 
