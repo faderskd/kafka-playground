@@ -1,0 +1,127 @@
+version: '3.8'
+
+services:
+  # --- Dedicated Controller Nodes ---
+  kafka-controller1:
+    image: confluentinc/cp-kafka:7.8.0 # Confluent Platform 7.8.0 uses Kafka 4.0.0
+    hostname: kafka-controller1
+    container_name: kafka-controller1
+    ports:
+      - "9093:9093" # Controller communication port
+    environment:
+      KAFKA_NODE_ID: 101 # Unique ID for controllers, starting from a higher range
+      KAFKA_PROCESS_ROLES: 'controller' # Only controller role
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '101@kafka-controller1:9093,102@kafka-controller2:9093,103@kafka-controller3:9093'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka-controller1:9093'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      CLUSTER_ID: 'Sm0k_e_LqRY_wFqU-T6gA' # Replace with a generated UUID or use this one for dev
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data' # Store metadata here
+
+  kafka-controller2:
+    image: confluentinc/cp-kafka:7.8.0
+    hostname: kafka-controller2
+    container_name: kafka-controller2
+    ports:
+      - "9094:9093" # Controller communication port (mapped to different host port)
+    environment:
+      KAFKA_NODE_ID: 102
+      KAFKA_PROCESS_ROLES: 'controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '101@kafka-controller1:9093,102@kafka-controller2:9093,103@kafka-controller3:9093'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka-controller2:9093'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      CLUSTER_ID: 'Sm0k_e_LqRY_wFqU-T6gA'
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
+
+  kafka-controller3:
+    image: confluentinc/cp-kafka:7.8.0
+    hostname: kafka-controller3
+    container_name: kafka-controller3
+    ports:
+      - "9095:9093" # Controller communication port (mapped to different host port)
+    environment:
+      KAFKA_NODE_ID: 103
+      KAFKA_PROCESS_ROLES: 'controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '101@kafka-controller1:9093,102@kafka-controller2:9093,103@kafka-controller3:9093'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka-controller3:9093'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      CLUSTER_ID: 'Sm0k_e_LqRY_wFqU-T6gA'
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
+
+  # --- Dedicated Broker Nodes ---
+  kafka-broker1:
+    image: confluentinc/cp-kafka:7.8.0
+    hostname: kafka-broker1
+    container_name: kafka-broker1
+    ports:
+      - "9092:9092" # Client access port
+    environment:
+      KAFKA_NODE_ID: 1 # Unique ID for brokers
+      KAFKA_BROKER_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker' # Only broker role
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '101@kafka-controller1:9093,102@kafka-controller2:9093,103@kafka-controller3:9093'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka-broker1:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:9092' # External access
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'PLAINTEXT:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT' # Inter-broker communication via PLAINTEXT
+      CLUSTER_ID: 'Sm0k_e_LqRY_wFqU-T6gA' # Must be the same as controllers
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    depends_on:
+      - kafka-controller1
+      - kafka-controller2
+      - kafka-controller3
+
+  kafka-broker2:
+    image: confluentinc/cp-kafka:7.8.0
+    hostname: kafka-broker2
+    container_name: kafka-broker2
+    ports:
+      - "9096:9092" # Client access port
+    environment:
+      KAFKA_NODE_ID: 2
+      KAFKA_BROKER_ID: 2
+      KAFKA_PROCESS_ROLES: 'broker'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '101@kafka-controller1:9093,102@kafka-controller2:9093,103@kafka-controller3:9093'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka-broker2:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:9096'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'PLAINTEXT:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      CLUSTER_ID: 'Sm0k_e_LqRY_wFqU-T6gA'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    depends_on:
+      - kafka-controller1
+      - kafka-controller2
+      - kafka-controller3
+
+  kafka-broker3:
+    image: confluentinc/cp-kafka:7.8.0
+    hostname: kafka-broker3
+    container_name: kafka-broker3
+    ports:
+      - "9097:9092" # Client access port
+    environment:
+      KAFKA_NODE_ID: 3
+      KAFKA_BROKER_ID: 3
+      KAFKA_PROCESS_ROLES: 'broker'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '101@kafka-controller1:9093,102@kafka-controller2:9093,103@kafka-controller3:9093'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka-broker3:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:9097'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'PLAINTEXT:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      CLUSTER_ID: 'Sm0k_e_LqRY_wFqU-T6gA'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    depends_on:
+      - kafka-controller1
+      - kafka-controller2
+      - kafka-controller3

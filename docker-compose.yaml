@@ -11,15 +11,14 @@ services:
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
-      KAFKA_LISTENERS: 'INTERNAL://kafka1:29092,CONTROLLER://kafka1:29093,EXTERNAL://0.0.0.0:9092'
-      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka1:29092,EXTERNAL://localhost:9092'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka1:29093'
       KAFKA_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29093,3@kafka3:29093'
-      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_PROCESS_ROLES: 'controller'
       KAFKA_CLUSTER_ID: 'JFb61d2pD6fe224FbsjoZl'
       KAFKA_LOG_DIRS: '/tmp/kafka/logs'
       KAFKA_NUM_PARTITIONS: 3
+      TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.controller.properties
   kafka2:
     build:
       context: ./
@@ -31,15 +30,14 @@ services:
     environment:
       KAFKA_NODE_ID: 2
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
-      KAFKA_LISTENERS: 'INTERNAL://kafka2:29092,CONTROLLER://kafka2:29093,EXTERNAL://0.0.0.0:9093'
-      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka2:29092,EXTERNAL://localhost:9093'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka2:29093'
       KAFKA_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29093,3@kafka3:29093'
-      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_PROCESS_ROLES: 'controller'
       KAFKA_CLUSTER_ID: 'JFb61d2pD6fe224FbsjoZl'
       KAFKA_LOG_DIRS: '/tmp/kafka/logs'
       KAFKA_NUM_PARTITIONS: 3
+      TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.controller.properties
   kafka3:
     build:
       context: ./
@@ -51,15 +49,14 @@ services:
     environment:
       KAFKA_NODE_ID: 3
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
-      KAFKA_LISTENERS: 'INTERNAL://kafka3:29092,CONTROLLER://kafka3:29093,EXTERNAL://0.0.0.0:9094'
-      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka3:29092,EXTERNAL://localhost:9094'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
-      KAFKA_QUORUM_VOTERS: '1@kafka3:29093,2@kafka2:29093,3@kafka3:29093'
-      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka3:29093'
+      KAFKA_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29093,3@kafka3:29093'
+      KAFKA_PROCESS_ROLES: 'controller'
       KAFKA_CLUSTER_ID: 'JFb61d2pD6fe224FbsjoZl'
       KAFKA_LOG_DIRS: '/tmp/kafka/logs'
       KAFKA_NUM_PARTITIONS: 3
+      TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.controller.properties
   kafka4:
     build:
       context: ./
@@ -75,11 +72,54 @@ services:
       KAFKA_LISTENERS: 'INTERNAL://kafka4:29092,EXTERNAL://0.0.0.0:9095'
       KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka4:29092,EXTERNAL://localhost:9095'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
-      KAFKA_QUORUM_VOTERS: '1@kafka3:29093,2@kafka2:29093,3@kafka3:29093'
+      KAFKA_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29093,3@kafka3:29093'
       KAFKA_PROCESS_ROLES: 'broker'
       KAFKA_CLUSTER_ID: 'JFb61d2pD6fe224FbsjoZl'
       KAFKA_LOG_DIRS: '/tmp/kafka/logs'
       KAFKA_NUM_PARTITIONS: 3
+      TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.broker.properties
+  kafka5:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    container_name: kafka5
+    hostname: kafka5
+    ports:
+      - "9096:9096"
+    environment:
+      KAFKA_NODE_ID: 5
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_LISTENERS: 'INTERNAL://kafka5:29092,EXTERNAL://0.0.0.0:9096'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka5:29092,EXTERNAL://localhost:9096'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29093,3@kafka3:29093'
+      KAFKA_PROCESS_ROLES: 'broker'
+      KAFKA_CLUSTER_ID: 'JFb61d2pD6fe224FbsjoZl'
+      KAFKA_LOG_DIRS: '/tmp/kafka/logs'
+      KAFKA_NUM_PARTITIONS: 3
+      TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.broker.properties
+  kafka6:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    container_name: kafka6
+    hostname: kafka6
+    ports:
+      - "9097:9097"
+    environment:
+      KAFKA_NODE_ID: 6
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_LISTENERS: 'INTERNAL://kafka6:29092,EXTERNAL://0.0.0.0:9097'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka6:29092,EXTERNAL://localhost:9097'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29093,3@kafka3:29093'
+      KAFKA_PROCESS_ROLES: 'broker'
+      KAFKA_CLUSTER_ID: 'JFb61d2pD6fe224FbsjoZl'
+      KAFKA_LOG_DIRS: '/tmp/kafka/logs'
+      KAFKA_NUM_PARTITIONS: 3
+      TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.broker.properties
 #  schema-registry:
 #    image: confluentinc/cp-schema-registry
 #    container_name: schema-registry
