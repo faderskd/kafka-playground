@@ -41,19 +41,22 @@ public class AsyncAuditProducer implements ProgramLoop {
         MeterRegistry meterRegistry = new SimpleMeterRegistry();
         timer = Timer
                 .builder("send.latency")
-                .publishPercentiles(0.99)
+                .publishPercentiles(0.99, 0.999)
                 .register(meterRegistry);
     }
 
     private static Properties producerProperties() {
         Properties props = new Properties();
         // required parameters
+
         props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9292,localhost:9393,localhost:9494,localhost:9595");
         props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
         props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
         // partitioning
-        props.setProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, RoundRobinPartitioner.class.getName());
+//        props.setProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, RoundRobinPartitioner.class.getName());
+        props.setProperty(ProducerConfig.PARTITIONER_ADPATIVE_PARTITIONING_ENABLE_CONFIG, "true");
+        props.setProperty(ProducerConfig.PARTITIONER_AVAILABILITY_TIMEOUT_MS_CONFIG, "50");
 
         // batching
         props.setProperty(ProducerConfig.LINGER_MS_CONFIG, "0");
