@@ -19,6 +19,8 @@ services:
       KAFKA_LOG_DIRS: '/tmp/kafka/logs'
       KAFKA_NUM_PARTITIONS: 3
       TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.controller.properties
+    volumes:
+      - kafka1-data:/tmp/kafka/logs
   kafka2:
     build:
       context: ./
@@ -38,6 +40,8 @@ services:
       KAFKA_LOG_DIRS: '/tmp/kafka/logs'
       KAFKA_NUM_PARTITIONS: 3
       TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.controller.properties
+    volumes:
+      - kafka2-data:/tmp/kafka/logs
   kafka3:
     build:
       context: ./
@@ -57,6 +61,8 @@ services:
       KAFKA_LOG_DIRS: '/tmp/kafka/logs'
       KAFKA_NUM_PARTITIONS: 3
       TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.controller.properties
+    volumes:
+      - kafka3-data:/tmp/kafka/logs
   kafka4:
     build:
       context: ./
@@ -78,6 +84,8 @@ services:
       KAFKA_LOG_DIRS: '/tmp/kafka/logs'
       KAFKA_NUM_PARTITIONS: 3
       TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.broker.properties
+    volumes:
+      - kafka4-data:/tmp/kafka/logs
   kafka5:
     build:
       context: ./
@@ -99,6 +107,8 @@ services:
       KAFKA_LOG_DIRS: '/tmp/kafka/logs'
       KAFKA_NUM_PARTITIONS: 3
       TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.broker.properties
+    volumes:
+      - kafka5-data:/tmp/kafka/logs
   kafka6:
     build:
       context: ./
@@ -120,6 +130,31 @@ services:
       KAFKA_LOG_DIRS: '/tmp/kafka/logs'
       KAFKA_NUM_PARTITIONS: 3
       TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.broker.properties
+    volumes:
+      - kafka6-data:/tmp/kafka/logs
+  kafka7:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    container_name: kafka7
+    hostname: kafka7
+    ports:
+      - "9098:9098"
+    environment:
+      KAFKA_NODE_ID: 7
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_LISTENERS: 'INTERNAL://kafka7:29092,EXTERNAL://0.0.0.0:9098'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka7:29092,EXTERNAL://localhost:9098'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29093,3@kafka3:29093'
+      KAFKA_PROCESS_ROLES: 'broker'
+      KAFKA_CLUSTER_ID: 'JFb61d2pD6fe224FbsjoZl'
+      KAFKA_LOG_DIRS: '/tmp/kafka/logs'
+      KAFKA_NUM_PARTITIONS: 3
+      TEMPLATE_PROPERTIES: /opt/kafka/config/kraft/template.broker.properties
+    volumes:
+      - kafka7-data:/tmp/kafka/logs
 #  schema-registry:
 #    image: confluentinc/cp-schema-registry
 #    container_name: schema-registry
@@ -134,3 +169,11 @@ services:
 #      - kafka1
 #      - kafka2
 #      - kafka3
+volumes:
+  kafka1-data:
+  kafka2-data:
+  kafka3-data:
+  kafka4-data:
+  kafka5-data:
+  kafka6-data:
+  kafka7-data:
